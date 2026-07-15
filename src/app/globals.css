@@ -34,7 +34,7 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* Brand colors */
+  /* Brand colors - mapped for Tailwind utilities (bg-navy, text-gold, etc.) */
   --color-navy: var(--navy);
   --color-navy-light: var(--navy-light);
   --color-navy-dark: var(--navy-dark);
@@ -42,7 +42,18 @@
   --color-gold-light: var(--gold-light);
   --color-gold-dark: var(--gold-dark);
   --color-emerald: var(--emerald);
+  --color-emerald-light: #10b981;
+  --color-emerald-600: #059669;
   --color-crimson: var(--crimson);
+  --color-crimson-light: #ef4444;
+  --color-amber-500: #f59e0b;
+  --color-orange-500: #f97316;
+  --color-sky-500: #0ea5e9;
+  --color-blue-500: #3b82f6;
+  --color-purple-500: #a855f7;
+  --color-pink-500: #ec4899;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
 
   /* Chart colors */
   --color-chart-1: var(--chart-1);
@@ -403,7 +414,15 @@
 
   /* Skeleton */
   .skeleton {
-    @apply rounded-md shimmer;
+    @apply rounded-md;
+    background: linear-gradient(
+      90deg,
+      var(--muted) 0%,
+      color-mix(in srgb, var(--muted) 50%, var(--background)) 50%,
+      var(--muted) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
   }
 
   /* Animated chart container */
