@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "bun run build",
+  "installCommand": "bun install",
+  "devCommand": "bun run dev",
+  "regions": ["sin1"],
+  "github": {
+    "silent": false
+  },
+  "env": {
+    "NEXT_PUBLIC_APP_NAME": "دفتر المحاسب"
+  }
+}

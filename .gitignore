@@ -1,0 +1,68 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# Testing
+coverage/
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# Production
+*.tsbuildinfo
+next-env.d.ts
+
+# Misc
+.DS_Store
+*.pem
+.idea/
+.vscode/
+*.swp
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Local env files
+.env
+.env*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Vercel
+.ver
+
+# IDE
+.idea/
+*.iml
+
+# Project-specific
+dev.log
+server.log
+.zscripts/
+db/*.db
+db/*.db-journal
+db/pdf-tmp/
+tessdata/
+ocr_out/
+ocr_out2/
+ocr_verify/
+rows/
+tool-results/
+upload/
+skills/
+
+# Keep these directories but ignore their contents
+!prisma/
+!public/
+!scripts/
+!download/

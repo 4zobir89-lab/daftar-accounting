@@ -1,0 +1,291 @@
+// Prisma schema for professional accounting application
+// Banking-grade double-entry bookkeeping system with multi-currency support
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================================================
+// USERS & AUTHENTICATION
+// =====================================================
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      UserRole @default(ACCOUNTANT)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  journalEntries JournalEntry[] @relation("JournalEntryCreator")
+  invoices       Invoice[]      @relation("InvoiceCreator")
+  sessions       Session[]
+  partners       Partner[]      @relation("PartnerCreator")
+}
+
+enum UserRole {
+  ADMIN
+  ACCOUNTANT
+  VIEWER
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// =====================================================
+// ACCOUNTS (Chart of Accounts - شجرة الحسابات)
+// =====================================================
+model Account {
+  id        String       @id @default(cuid())
+  code      String       @unique // رقم الحساب الهرمي مثل 1000، 1100، 1110
+  name      String
+  nameEn    String?
+  type      AccountType
+  parentId  String?
+  isGroup   Boolean      @default(false) // حساب تجميعي
+  currency  String       @default("SAR")
+  active    Boolean      @default(true)
+  notes     String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  parent   Account?  @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children Account[] @relation("AccountHierarchy")
+
+  journalLines JournalLine[]
+  partnerAccounts PartnerAccount[]
+
+  @@index([parentId])
+  @@index([type])
+}
+
+enum AccountType {
+  ASSET      // أصول
+  LIABILITY  // خصوم
+  EQUITY     // حقوق ملكية
+  REVENUE    // إيرادات
+  EXPENSE    // مصروفات
+}
+
+// =====================================================
+// CURRENCIES & EXCHANGE RATES
+// =====================================================
+model Currency {
+  id        String   @id @default(cuid())
+  code      String   @unique // SAR, YER, USD
+  name      String
+  symbol    String
+  isBase    Boolean  @default(false)
+  decimals  Int      @default(2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  exchangeRatesFrom ExchangeRate[] @relation("ExchangeRateFrom")
+  exchangeRatesTo   ExchangeRate[] @relation("ExchangeRateTo")
+  journalLines      JournalLine[]
+  journalEntries    JournalEntry[]
+  invoices          Invoice[]
+  partners          Partner[]
+}
+
+model ExchangeRate {
+  id         String   @id @default(cuid())
+  fromCurrencyId String
+  toCurrencyId   String
+  rate       Float    // 1 unit of "from" = rate units of "to"
+  date       DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  fromCurrency Currency @relation("ExchangeRateFrom", fields: [fromCurrencyId], references: [id])
+  toCurrency   Currency @relation("ExchangeRateTo",   fields: [toCurrencyId],   references: [id])
+
+  @@unique([fromCurrencyId, toCurrencyId, date])
+  @@index([date])
+}
+
+// =====================================================
+// PARTNERS (عملاء/موردين/أشخاص)
+// =====================================================
+model Partner {
+  id        String   @id @default(cuid())
+  name      String
+  type      PartnerType
+  phone     String?
+  email     String?
+  address   String?
+  taxNumber String?
+  notes     String?
+  openingBalance Float @default(0)
+  currencyId String?
+  createdById String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  currency      Currency?       @relation(fields: [currencyId], references: [id])
+  partnerAccounts PartnerAccount[]
+  journalEntries JournalEntry[] @relation("JournalEntryPartner")
+  invoices      Invoice[]       @relation("InvoicePartner")
+  createdBy     User?           @relation("PartnerCreator", fields: [createdById], references: [id])
+
+  @@index([type])
+}
+
+enum PartnerType {
+  CUSTOMER    // عميل
+  SUPPLIER    // مورّد
+  EMPLOYEE    // موظف
+  INDIVIDUAL  // شخص
+  OTHER       // أخرى
+}
+
+// Link partners to accounts (receivable/payable per partner)
+model PartnerAccount {
+  id        String   @id @default(cuid())
+  partnerId String
+  accountId String
+  createdAt DateTime @default(now())
+
+  partner Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  account Account @relation(fields: [accountId], references: [id])
+
+  @@unique([partnerId, accountId])
+}
+
+// =====================================================
+// JOURNAL ENTRIES (دفتر اليومية - القيود المزدوجة)
+// =====================================================
+model JournalEntry {
+  id          String   @id @default(cuid())
+  entryNumber String   @unique // رقم القيد التسلسلي
+  date        DateTime
+  description String
+  reference   String?  // رقم مرجعي (شيك، حوالة، فاتورة)
+  notes       String?
+  status      EntryStatus @default(POSTED)
+  totalDebit  Float
+  totalCredit Float
+  currencyId  String
+  createdById String
+  partnerId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  currency  Currency  @relation(fields: [currencyId], references: [id])
+  createdBy User      @relation("JournalEntryCreator", fields: [createdById], references: [id])
+  partner   Partner?  @relation("JournalEntryPartner", fields: [partnerId], references: [id])
+
+  lines JournalLine[]
+
+  @@index([date])
+  @@index([partnerId])
+  @@index([entryNumber])
+}
+
+enum EntryStatus {
+  DRAFT
+  POSTED
+  REVERSED
+}
+
+model JournalLine {
+  id          String   @id @default(cuid())
+  entryId     String
+  accountId   String
+  debit       Float    @default(0)
+  credit      Float    @default(0)
+  description String?
+  currencyId  String
+  createdAt   DateTime @default(now())
+
+  entry   JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  account Account       @relation(fields: [accountId], references: [id])
+  currency Currency     @relation(fields: [currencyId], references: [id])
+
+  @@index([entryId])
+  @@index([accountId])
+}
+
+// =====================================================
+// INVOICES (الفواتير) - for sales/purchases
+// =====================================================
+model Invoice {
+  id           String       @id @default(cuid())
+  invoiceNumber String      @unique
+  type         InvoiceType
+  date         DateTime
+  dueDate      DateTime?
+  partnerId    String
+  currencyId   String
+  subtotal     Float
+  discount     Float        @default(0)
+  taxRate      Float        @default(0)
+  taxAmount    Float        @default(0)
+  total        Float
+  paidAmount   Float        @default(0)
+  status       InvoiceStatus @default(UNPAID)
+  notes        String?
+  createdById  String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  partner   Partner @relation("InvoicePartner", fields: [partnerId], references: [id])
+  currency  Currency @relation(fields: [currencyId], references: [id])
+  createdBy User     @relation("InvoiceCreator", fields: [createdById], references: [id])
+
+  items InvoiceItem[]
+
+  @@index([date])
+  @@index([partnerId])
+  @@index([type])
+}
+
+enum InvoiceType {
+  SALE
+  PURCHASE
+}
+
+enum InvoiceStatus {
+  UNPAID
+  PARTIAL
+  PAID
+  CANCELLED
+}
+
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  description String
+  quantity    Float
+  unitPrice   Float
+  total       Float
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+}
+
+// =====================================================
+// SETTINGS & APP CONFIG
+// =====================================================
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+  type  String @default("string") // string, number, boolean, json
+}
