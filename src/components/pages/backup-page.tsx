@@ -4,10 +4,8 @@ import { useRef, useState } from "react";
 import { useApp } from "@/components/app-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { DatabaseBackup, Download, Upload, RotateCcw, FileJson } from "lucide-react";
+import { DatabaseBackup, Download, Upload, RotateCcw, FileJson, Shield, Cloud, HardDrive } from "lucide-react";
 
 export function BackupPage() {
   const { refreshAll, notify } = useApp();
@@ -39,12 +37,10 @@ export function BackupPage() {
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (!confirm("استيراد سيمزج البيانات الحالية مع البيانات المستوردة. متابعة؟")) {
       e.target.value = "";
       return;
     }
-
     setImporting(true);
     try {
       const text = await file.text();
@@ -58,9 +54,7 @@ export function BackupPage() {
       if (result.imported !== undefined) {
         notify(`تم استيراد ${result.imported} عنصر، تخطى ${result.skipped}`, "success");
         await refreshAll();
-      } else {
-        notify(result.error || "فشل الاستيراد", "error");
-      }
+      } else notify(result.error || "فشل الاستيراد", "error");
     } catch (e) {
       notify("فشل قراءة الملف: " + (e as Error).message, "error");
     } finally {
@@ -70,43 +64,49 @@ export function BackupPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-4">
-      <div>
-        <h2 className="font-serif text-2xl sm:text-3xl font-bold text-primary">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-5 max-w-[1200px] mx-auto">
+      <div className="stagger-item">
+        <h2 className="font-display text-2xl sm:text-3xl font-bold text-foreground">
           النسخ الاحتياطي والاستعادة
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          تصدير واستيراد كامل بيانات النظام بصيغة JSON
+          احمِ بياناتك المحاسبية بالتصدير الدوري والاستعادة عند الحاجة
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Export */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-serif text-lg flex items-center gap-2">
-              <Download className="w-5 h-5 text-[var(--credit)]" /> تصدير البيانات
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              يقوم بتصدير جميع البيانات (العملات، الحسابات، الشركاء، القيود، الفواتير، الإعدادات) في ملف JSON واحد.
-            </p>
-            <div className="space-y-1.5 text-xs">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">JSON</Badge>
-                <span>صيغة قياسية</span>
+        <Card className="overflow-hidden stagger-item" style={{ animationDelay: "80ms" }}>
+          <div className="gradient-card-emerald p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+                <Download className="w-6 h-6 text-white" />
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">شامل</Badge>
-                <span>كل الجداول والعلاقات</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">آمن</Badge>
-                <span>البيانات تبقى محلية</span>
+              <div>
+                <div className="font-display text-lg font-bold text-white">تصدير البيانات</div>
+                <div className="text-xs text-white/80">احفظ نسخة كاملة من بياناتك</div>
               </div>
             </div>
-            <Button onClick={handleExport} disabled={exporting} className="w-full">
+          </div>
+          <CardContent className="p-5 space-y-3">
+            <p className="text-sm text-muted-foreground">
+              يقوم بتصدير جميع البيانات (العملات، الحسابات، الشركاء، القيود، الإعدادات) في ملف JSON واحد.
+            </p>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="p-2 rounded-lg bg-muted/50">
+                <FileJson className="w-4 h-4 mx-auto mb-1 text-gold" />
+                <div className="text-[10px] text-muted-foreground">JSON</div>
+              </div>
+              <div className="p-2 rounded-lg bg-muted/50">
+                <Shield className="w-4 h-4 mx-auto mb-1 text-emerald" />
+                <div className="text-[10px] text-muted-foreground">شامل</div>
+              </div>
+              <div className="p-2 rounded-lg bg-muted/50">
+                <Cloud className="w-4 h-4 mx-auto mb-1 text-navy" />
+                <div className="text-[10px] text-muted-foreground">سحابي</div>
+              </div>
+            </div>
+            <Button onClick={handleExport} disabled={exporting} className="w-full btn-premium">
               <FileJson className="w-4 h-4 ml-2" />
               {exporting ? "جارٍ التصدير..." : "تنزيل النسخة الاحتياطية"}
             </Button>
@@ -114,28 +114,34 @@ export function BackupPage() {
         </Card>
 
         {/* Import */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-serif text-lg flex items-center gap-2">
-              <Upload className="w-5 h-5 text-[var(--gold)]" /> استيراد البيانات
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
+        <Card className="overflow-hidden stagger-item" style={{ animationDelay: "160ms" }}>
+          <div className="gradient-card-gold p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+                <Upload className="w-6 h-6 text-navy" />
+              </div>
+              <div>
+                <div className="font-display text-lg font-bold text-navy">استيراد البيانات</div>
+                <div className="text-xs text-navy/80">استعد بياناتك من ملف JSON</div>
+              </div>
+            </div>
+          </div>
+          <CardContent className="p-5 space-y-3">
             <p className="text-sm text-muted-foreground">
               استورد بيانات من ملف JSON تم تصديره مسبقاً. سيتم دمج البيانات مع الموجودة.
             </p>
-            <div className="space-y-1.5 text-xs">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">دمج</Badge>
-                <span>لن يحذف البيانات الحالية</span>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="p-2 rounded-lg bg-muted/50">
+                <RotateCcw className="w-4 h-4 mx-auto mb-1 text-gold-dark" />
+                <div className="text-[10px] text-muted-foreground">دمج</div>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">آمن</Badge>
-                <span>يتخطى التكرارات</span>
+              <div className="p-2 rounded-lg bg-muted/50">
+                <Shield className="w-4 h-4 mx-auto mb-1 text-emerald" />
+                <div className="text-[10px] text-muted-foreground">آمن</div>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">JSON</Badge>
-                <span>نفس صيغة التصدير</span>
+              <div className="p-2 rounded-lg bg-muted/50">
+                <FileJson className="w-4 h-4 mx-auto mb-1 text-gold" />
+                <div className="text-[10px] text-muted-foreground">JSON</div>
               </div>
             </div>
             <input
@@ -145,7 +151,7 @@ export function BackupPage() {
               onChange={handleImportFile}
               className="hidden"
             />
-            <Button onClick={handleImportClick} disabled={importing} variant="outline" className="w-full">
+            <Button onClick={handleImportClick} disabled={importing} variant="outline" className="w-full btn-premium">
               <RotateCcw className="w-4 h-4 ml-2" />
               {importing ? "جارٍ الاستيراد..." : "اختر ملف للاستيراد"}
             </Button>
@@ -154,28 +160,46 @@ export function BackupPage() {
       </div>
 
       {/* Info card */}
-      <Card>
+      <Card className="stagger-item" style={{ animationDelay: "240ms" }}>
         <CardHeader>
-          <CardTitle className="font-serif text-lg flex items-center gap-2">
-            <DatabaseBackup className="w-5 h-5 text-primary" /> معلومات عن النسخ الاحتياطي
+          <CardTitle className="font-display text-lg flex items-center gap-2">
+            <DatabaseBackup className="w-5 h-5 text-gold" />
+            معلومات النظام
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
-          <div className="flex justify-between p-2 bg-[var(--cream-warm)] rounded">
-            <span>قاعدة البيانات:</span>
-            <span className="font-num">SQLite</span>
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+            <span className="flex items-center gap-2">
+              <HardDrive className="w-4 h-4 text-muted-foreground" />
+              قاعدة البيانات
+            </span>
+            <Badge variant="outline" className="font-mono">PostgreSQL (Neon)</Badge>
           </div>
-          <div className="flex justify-between p-2 bg-[var(--cream-warm)] rounded">
-            <span>مكان التخزين:</span>
-            <span className="font-num text-xs">/home/z/my-project/db/custom.db</span>
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+            <span className="flex items-center gap-2">
+              <Cloud className="w-4 h-4 text-muted-foreground" />
+              نوع التخزين
+            </span>
+            <Badge variant="outline">سحابي (Serverless)</Badge>
           </div>
-          <div className="flex justify-between p-2 bg-[var(--cream-warm)] rounded">
-            <span>صيغة النسخة:</span>
-            <span className="font-num">JSON v1.0</span>
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+            <span className="flex items-center gap-2">
+              <FileJson className="w-4 h-4 text-muted-foreground" />
+              صيغة النسخة
+            </span>
+            <Badge variant="outline" className="font-mono">JSON v1.0</Badge>
           </div>
-          <div className="mt-3 p-3 border-r-4 border-[var(--gold)] bg-[var(--cream-warm)] rounded text-xs">
-            <p className="font-semibold mb-1">💡 نصيحة:</p>
-            <p>قم بتصدير نسخة احتياطية بانتظام (أسبوعياً أو شهرياً) واحتفظ بنسخ منها في أماكن متعددة لضمان عدم فقدان بياناتك المحاسبية.</p>
+          <div className="mt-3 p-4 border-r-4 border-gold bg-gradient-to-l from-gold/10 to-transparent rounded-lg">
+            <div className="flex items-start gap-3">
+              <Shield className="w-5 h-5 text-gold-dark shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-sm mb-1">💡 نصيحة للنسخ الاحتياطي</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  قم بتصدير نسخة احتياطية بانتظام (أسبوعياً أو شهرياً) واحتفظ بنسخ منها في أماكن متعددة
+                  (جهازك، التخزين السحابي، فلاش) لضمان عدم فقدان بياناتك المحاسبية أبداً.
+                </p>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
